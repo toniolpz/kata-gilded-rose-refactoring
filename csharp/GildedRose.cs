@@ -1,10 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using ApprovalUtilities.Utilities;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace csharp
 {
     public class GildedRose
     {
         IList<Item> Items;
+        private const string sulfuras = "Sulfuras, Hand of Ragnaros";
+        private const string agedBrie = "Aged Brie";
+        private const string backstagePasses = "Backstage passes to a TAFKAL80ETC concert";
+        private const string conjured = "Conjured Mana Cake";
+
         public GildedRose(IList<Item> Items)
         {
             this.Items = Items;
@@ -12,86 +19,44 @@ namespace csharp
 
         public void UpdateQuality()
         {
-            for (var i = 0; i < Items.Count; i++)
+            foreach (Item item in Items)
             {
-                if (Items[i].Name != "Aged Brie" && Items[i].Name != "Backstage passes to a TAFKAL80ETC concert")
-                {
-                    if (Items[i].Quality > 0)
-                    {
-                        if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
-                        {
-                            // Adding validation for Conjured Items - ALV 14082019
-                            if (Items[i].Name.Equals("Conjured Mana Cake") && Items[i].Quality > 1)
-                            {
-                                // Lost value double than normal Items
-                                Items[i].Quality = Items[i].Quality - 2;
-                            }
-                            else
-                            {
-                                // If it's just 1 in Quality, just substract 1 for leave it in cero
-                                Items[i].Quality = Items[i].Quality - 1;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (Items[i].Quality < 50)
-                    {
-                        Items[i].Quality = Items[i].Quality + 1;
+                // Update SellIn in everything except for sulfuras
+                if (!item.Name.Equals(sulfuras)) item.SellIn--;
 
-                        if (Items[i].Name == "Backstage passes to a TAFKAL80ETC concert")
-                        {
-                            if (Items[i].SellIn < 11)
-                            {
-                                if (Items[i].Quality < 50)
-                                {
-                                    Items[i].Quality = Items[i].Quality + 1;
-                                }
-                            }
-
-                            if (Items[i].SellIn < 6)
-                            {
-                                if (Items[i].Quality < 50)
-                                {
-                                    Items[i].Quality = Items[i].Quality + 1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
+                switch (item.Name)
                 {
-                    Items[i].SellIn = Items[i].SellIn - 1;
-                }
-
-                if (Items[i].SellIn < 0)
-                {
-                    if (Items[i].Name != "Aged Brie")
-                    {
-                        if (Items[i].Name != "Backstage passes to a TAFKAL80ETC concert")
-                        {
-                            if (Items[i].Quality > 0)
-                            {
-                                if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
-                                {
-                                    Items[i].Quality = Items[i].Quality - 1;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Items[i].Quality = Items[i].Quality - Items[i].Quality;
-                        }
-                    }
-                    else
-                    {
-                        if (Items[i].Quality < 50)
-                        {
-                            Items[i].Quality = Items[i].Quality + 1;
-                        }
-                    }
+                    case agedBrie:
+                        // Increases quality with time
+                        if (item.Quality < 50) item.Quality++;
+                        // Increase quality one more if sell date has passed
+                        if (item.Quality < 50 && item.SellIn < 0) item.Quality++;
+                        break;
+                    case backstagePasses:
+                        // Increases quality with time
+                        if (item.Quality < 50) item.Quality++;
+                        // Increases quality by two within 10 days
+                        if (item.Quality < 50 && item.SellIn < 10) item.Quality++;
+                        // Increases quality by thrw within 5 days
+                        if (item.Quality < 50 && item.SellIn < 5) item.Quality++;
+                        // Quality drops to cero after the concert
+                        if (item.SellIn < 0) item.Quality = 0;
+                        break;
+                    case sulfuras:
+                        // I'm legendary
+                        break;
+                    case conjured:
+                        // Decrease in one
+                        if (item.Quality > 0) item.Quality--;
+                        // If still have value in quality, decrease one more
+                        if (item.Quality > 0) item.Quality--;
+                        break;
+                    default:
+                        // Decreases quality of regular Items
+                        if (item.Quality > 0) item.Quality--;
+                        // Decreases double if sell date has passed
+                        if (item.Quality > 0 && item.SellIn < 0) item.Quality--;
+                        break;
                 }
             }
         }
